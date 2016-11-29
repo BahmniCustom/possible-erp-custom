@@ -33,7 +33,9 @@
                         <enable-download value="False"/>
                         <download-label value="Download Data"/>
                         <enable-autocomplete value="True"/>
+                        <show-locations value="False" />
                         <autocomplete-label value="Product"/>
+                        <show-graphs value="True" />
                     </options>
                 </chart-d3>
             </field>

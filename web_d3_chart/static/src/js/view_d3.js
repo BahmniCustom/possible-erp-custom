@@ -46,8 +46,39 @@ openerp.web_d3_chart = function(instance) {
             this.axis2read = [];
             this.session = parent.session;
         },
+        showLocationPicker : function(){
+            var self = this;
+            $('.location-container').hide();
+            if(self.bool(self.d3_options["show-locations"])){
+                $('.location-container').show();
+            }
+        },
+        showGraphOptions: function(){
+            var self = this;
+            $('.graph-options').hide();
+            if(self.bool(self.d3_options["show-graphs"])){
+                $('.graph-options').show();
+            }
+        },
+        populateLocations:function(){
+            var self = this;
+            self.rpc("/web/chartd3/get_locations", {
+                locationUsage: 'internal'
+            }).then(function (locations) {
+                var locationSelect = $('#location');
+                locations.forEach(function(location){
+                    locationSelect.append($('<option>',{value:location.id,text:location.name}));
+                });
+            });
+        },
         apply_dynamic_changes: function() {
             var self = this;
+
+            self.showLocationPicker();
+            self.showGraphOptions();
+            if(self.bool(self.d3_options["show-locations"])){
+                self.populateLocations();
+            }
             if (self.bool(self.d3_options["enable-autocomplete"])){
                 $( "#autocomplete_field" ).autocomplete({
                     source: function( request, response ) {
@@ -85,7 +116,9 @@ openerp.web_d3_chart = function(instance) {
                             data: JSON.stringify({
                                 start_date:self.startDate(),
                                 model : model,
-                                end_date:self.endDate()
+                                end_date:self.endDate(),
+                                location_name: self.getLocationName(),
+                                location_id:self.getLocationId()
                             })},
                         complete: $.unblockUI
                     });
@@ -134,7 +167,6 @@ openerp.web_d3_chart = function(instance) {
                         .margin({top: 30});
                     chart.useInteractiveGuideline(true);
                     chart.dispatch.on('renderEnd', function(){
-                        console.log('render complete');
                     });
                     var options = $.extend({}, self.d3_options);
                     self.apply_field_axis_options(chart, options);
@@ -256,9 +288,6 @@ openerp.web_d3_chart = function(instance) {
         },
         apply_field_axis_options: function(chart, options) {
             var self = this;
-            console.log("options");
-            console.log(self.xaxisOpts);
-            console.log(self.yaxis);
             var mode = this.d3_options.mode;
             var xLabel = this.xaxisOpts[this.xaxis].label;
             var xTickFormat = this.xaxisOpts[this.xaxis]["tick-format"];
@@ -397,8 +426,6 @@ openerp.web_d3_chart = function(instance) {
             _(this.get_nodes(fields_view, axis, true)).each(function (field) {
                 nodes[field.attrs.name] = field.attrs
             });
-            console.log("called wiht axis="+axis);
-            console.log(nodes);
             return nodes;
         },
         apply_yn_axis: function(node, values, field_axis){
@@ -431,6 +458,12 @@ openerp.web_d3_chart = function(instance) {
             var date = $('#end_date').datepicker({ dateFormat: 'yyyy-mm-dd' }).val();
             return date;
         },
+        getLocationName : function () {
+            return $('#location option:selected').text();
+        },
+        getLocationId : function () {
+            return $('#location option:selected').val();
+        },
 
         reload: function(){
             var self = this,
@@ -458,8 +491,6 @@ openerp.web_d3_chart = function(instance) {
         },
         load_chart: function(fields_view) {
             var self = this;
-            console.log("fields_view");
-            console.log(fields_view);
             this.xaxisOpts = this.get_yaxis(fields_view, 'x-axis');
             this.xaxis = this.get_fieldname(fields_view, 'x-axis');
             this.yaxis = this.get_yaxis(fields_view, 'y-axis');
